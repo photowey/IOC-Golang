@@ -18,7 +18,6 @@ package util
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 const (
@@ -45,34 +44,4 @@ func GetTypeFromInterface(v interface{}) reflect.Type {
 	valueOfInterface := reflect.ValueOf(v)
 	valueOfElemInterface := valueOfInterface.Elem()
 	return valueOfElemInterface.Type()
-}
-
-func ToCamelCase(src string) string {
-	if src == emptyString {
-		return emptyString
-	}
-
-	return strings.ToLower(src[:1]) + src[1:]
-}
-
-func ToSnakeCase(src string) string {
-	if src == emptyString {
-		return src
-	}
-	srcLen := len(src)
-	result := make([]byte, 0, srcLen*2)
-	caseSymbol := false
-	for i := 0; i < srcLen; i++ {
-		char := src[i]
-		if i > 0 && char >= 'A' && char <= 'Z' && caseSymbol { // _xxx || yyy__zzz
-			result = append(result, '_')
-		}
-		caseSymbol = char != '_'
-
-		result = append(result, char)
-	}
-
-	snakeCase := strings.ToLower(string(result))
-
-	return snakeCase
 }

@@ -18,8 +18,6 @@ package util
 import (
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type StructFoo struct {
@@ -118,82 +116,6 @@ func TestGetTypeFromInterface(t *testing.T) {
 			if got := GetTypeFromInterface(tt.args.v); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetTypeFromInterface() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func Test_ToCamelCase(t *testing.T) {
-	type args struct {
-		src string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "Test ToCamelCase-1",
-			args: args{
-				src: "HelloWorld",
-			},
-			want: "helloWorld",
-		},
-		{
-			name: "Test ToCamelCase-2",
-			args: args{
-				src: "helloWorld",
-			},
-			want: "helloWorld",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, ToCamelCase(tt.args.src), "toCamelCase(%v)", tt.args.src)
-		})
-	}
-}
-
-func Test_ToSnakeCase(t *testing.T) {
-	type args struct {
-		src string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "Test ToSnakeCase-1",
-			args: args{
-				src: "HelloWorld",
-			},
-			want: "hello_world",
-		},
-		{
-			name: "Test ToSnakeCase-2",
-			args: args{
-				src: "helloWorld",
-			},
-			want: "hello_world",
-		},
-		{
-			name: "Test ToSnakeCase-3",
-			args: args{
-				src: "hello_world",
-			},
-			want: "hello_world",
-		},
-		{
-			name: "Test ToSnakeCase-4",
-			args: args{
-				src: "hello_World",
-			},
-			want: "hello_world",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, ToSnakeCase(tt.args.src), "toSnakeCase(%v)", tt.args.src)
 		})
 	}
 }

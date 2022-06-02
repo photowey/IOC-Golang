@@ -15,13 +15,6 @@
 
 package config
 
-//
-// Why?
-//
-// In many scenarios, int64 may be use,
-// such as the nextId by the snowflake algorithm.
-//
-
 // +ioc:autowire=true
 // +ioc:autowire:baseType=true
 // +ioc:autowire:type=config

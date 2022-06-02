@@ -15,13 +15,6 @@
 
 package config
 
-//
-// Why?
-//
-// In many scenarios, float64 may be use,
-// such as the price of order.
-//
-
 // +ioc:autowire=true
 // +ioc:autowire:baseType=true
 // +ioc:autowire:type=config
