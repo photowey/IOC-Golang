@@ -36,7 +36,13 @@ type App struct {
 	DemoConfigMap     *config.ConfigMap     `config:"github.com/alibaba/ioc-golang/extension/config.ConfigMap,autowire.config.demo-config.map-value"`
 	DemoConfigSlice   *config.ConfigSlice   `config:"github.com/alibaba/ioc-golang/extension/config.ConfigSlice,autowire.config.demo-config.slice-value"`
 	DemoConfigInt64   *config.ConfigInt64   `config:"github.com/alibaba/ioc-golang/extension/config.ConfigInt64,autowire.config.demo-config.int64-value"`
-	DemoConfigFloat64 *config.ConfigFloat64 `config:"github.com/alibaba/ioc-golang/extension/config.ConfigFloat64,autowire.config#demo-config#float64-value"`
+	DemoConfigFloat64 *config.ConfigFloat64 `config:"github.com/alibaba/ioc-golang/extension/config.ConfigFloat64,autowire.config.demo-config.float64-value"`
+
+	// When SDID is blank, the field type will be used instead
+	DemoConfigFloat64SDIDBlank *config.ConfigFloat64 `config:",autowire.config.demo-config.float64-value"`
+
+	// DemoConfigFloat64BlankAll  *config.ConfigFloat64 `config:","`
+	// DemoConfigFloat64Blank       *config.ConfigFloat64 `config:""`
 }
 
 func (a *App) Run() {
@@ -46,6 +52,9 @@ func (a *App) Run() {
 	fmt.Println(a.DemoConfigSlice.Value())
 	fmt.Println(a.DemoConfigInt64.Value())
 	fmt.Println(a.DemoConfigFloat64.Value())
+	fmt.Println(a.DemoConfigFloat64SDIDBlank.Value())
+	// fmt.Println(a.DemoConfigFloat64BlankAll.Value())
+	// fmt.Println(a.DemoConfigFloat64Blank.Value())
 }
 
 func main() {

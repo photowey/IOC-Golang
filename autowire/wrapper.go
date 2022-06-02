@@ -170,5 +170,9 @@ func (w *WrapperAutowireImpl) inject(impledPtr interface{}, sdId string) error {
 }
 
 func buildFiledTypeFullName(field reflect.StructField) string {
+	if field.Type.Kind() == reflect.Ptr {
+		return field.Type.Elem().PkgPath() + "." + field.Type.Elem().Name()
+	}
+
 	return field.Type.PkgPath() + "." + field.Type.Name()
 }

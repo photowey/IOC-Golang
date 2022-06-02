@@ -16,6 +16,7 @@
 package config
 
 import (
+	"errors"
 	"io/ioutil"
 	"strings"
 
@@ -189,6 +190,10 @@ func LoadConfigByPrefix(prefix string, configStructPtr interface{}) error {
 	if configStructPtr == nil {
 		return nil
 	}
+	if strings.TrimSpace(prefix) == "" {
+		return errors.New("prefix value must not be blank")
+	}
+
 	splited := strings.Split(prefix, "<")
 	var configProperties []string
 	if len(splited) == 1 {

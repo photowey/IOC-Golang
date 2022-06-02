@@ -17,6 +17,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -45,8 +46,16 @@ func (p *paramLoader) Load(sd *autowire.StructDescriptor, fi *autowire.FieldInfo
 	if sd == nil || fi == nil || sd.ParamFactory == nil {
 		return nil, errors.New("not supported")
 	}
+
+	if strings.TrimSpace(fi.TagValue) == "" {
+		return nil, fmt.Errorf("field:%s tag value must not be blank", fi.FieldName)
+	}
 	splitedTagValue := strings.Split(fi.TagValue, ",")
 	configPath := splitedTagValue[1]
+	if strings.TrimSpace(configPath) == "" {
+		return nil, fmt.Errorf("field:%s tag value must not be blank", fi.FieldName)
+	}
+
 	param := sd.ParamFactory()
 	if err := config.LoadConfigByPrefix(configPath, param); err != nil {
 		log.Println("load config path "+configPath+" error = ", err)
