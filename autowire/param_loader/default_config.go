@@ -85,7 +85,7 @@ autowire:
 */
 func (p *defaultConfig) Load(sd *autowire.StructDescriptor, fi *autowire.FieldInfo) (interface{}, error) {
 	if sd == nil || sd.ParamFactory == nil {
-		return nil, errors.New("not supporterd")
+		return nil, errors.New("not supported")
 	}
 	param := sd.ParamFactory()
 	prefix := getDefaultConfigPrefix(sd)

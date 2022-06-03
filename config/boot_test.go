@@ -131,3 +131,56 @@ func TestSetConfig(t *testing.T) {
 		})
 	}
 }
+
+func Test_determineConfigProperties(t *testing.T) {
+	type args struct {
+		key string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "test determine config properties",
+			args: args{
+				key: "autowire.normal.<github.com/alibaba/ioc-golang/extension/normal/redis.Impl>.db1-redis.param",
+			},
+			want: []string{
+				"autowire",
+				"normal",
+				"github.com/alibaba/ioc-golang/extension/normal/redis.Impl",
+				"db1-redis",
+				"param",
+			},
+			wantErr: false,
+		},
+		{
+			name: "test determine config properties: unpair-1",
+			args: args{
+				key: "autowire.normal.github.com/alibaba/ioc-golang/extension/normal/redis.Impl>.db1-redis.param",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test determine config properties: unpair-2",
+			args: args{
+				key: "autowire.normal.<github.com/alibaba/ioc-golang/extension/normal/redis.Impl.db1-redis.param",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := determineConfigProperties(tt.args.key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("determineConfigProperties() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equalf(t, tt.want, got, "determineConfigProperties(%v)", tt.args.key)
+		})
+	}
+}

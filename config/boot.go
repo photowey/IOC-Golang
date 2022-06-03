@@ -186,6 +186,14 @@ func WithMergeDepth(mergeDepth uint8) Option {
 // ----------------------------------------------------------------
 
 // LoadConfigByPrefix prefix is like 'a.b.c' or 'a.b.<github.com/xxx/xx/xxx.Impl>.c', configStructPtr is interface ptr
+//
+// Wrong config key prefix will return error.
+//
+// e.g.:
+//
+// a.b.<github.com/xxx/xx/xxx.Impl.c
+//
+// a.b.github.com/xxx/xx/xxx.Impl>.c
 func LoadConfigByPrefix(prefix string, configStructPtr interface{}) error {
 	if configStructPtr == nil {
 		return nil
@@ -193,24 +201,55 @@ func LoadConfigByPrefix(prefix string, configStructPtr interface{}) error {
 	if strings.TrimSpace(prefix) == "" {
 		return errors.New("prefix value must not be blank")
 	}
+	realConfigProperties, err := determineConfigProperties(prefix)
+	if err != nil {
+		return err
+	}
 
-	splited := strings.Split(prefix, "<")
-	var configProperties []string
-	if len(splited) == 1 {
-		configProperties = strings.Split(prefix, YamlConfigSeparator)
-	} else {
-		configProperties = strings.Split(splited[0], YamlConfigSeparator)
-		backSplitedList := strings.Split(splited[1], ">")
-		configProperties = append(configProperties, backSplitedList[0])
-		configProperties = append(configProperties, strings.Split(backSplitedList[1], YamlConfigSeparator)...)
-	}
-	realConfigProperties := make([]string, 0)
-	for _, v := range configProperties {
-		if v != "" {
-			realConfigProperties = append(realConfigProperties, v)
-		}
-	}
 	return loadProperty(realConfigProperties, 0, config, configStructPtr)
+}
+
+// ----------------------------------------------------------------
+
+func determineConfigProperties(key string) ([]string, error) {
+	tokens := make([]rune, 0)
+	sdIDs := make([]rune, 0)
+	keys := make([]string, 0)
+
+	for _, char := range key {
+		if char == '<' || len(sdIDs) > 0 {
+			sdIDs = append(sdIDs, char)
+			if char == '>' {
+				keys = append(keys, string(sdIDs[1:len(sdIDs)-1]))
+				sdIDs = make([]rune, 0)
+			}
+			continue
+		}
+
+		if char == '>' && len(sdIDs) == 0 {
+			return nil, errors.New("marks of sdID \"< & >\" unpaired")
+		}
+
+		if char == '.' {
+			if len(tokens) > 0 {
+				keys = append(keys, string(tokens))
+				tokens = make([]rune, 0)
+			}
+			continue
+		}
+
+		tokens = append(tokens, char)
+	}
+
+	if len(tokens) > 0 {
+		keys = append(keys, string(tokens))
+	}
+
+	if len(sdIDs) > 0 {
+		return nil, errors.New("marks of sdID \"< & >\" unpaired")
+	}
+
+	return keys, nil
 }
 
 // ----------------------------------------------------------------

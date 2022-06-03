@@ -96,7 +96,7 @@ func (p *defaultTagPointToConfig) Load(sd *autowire.StructDescriptor, fi *autowi
 	param := sd.ParamFactory()
 
 	splitedTagValue := strings.Split(fi.TagValue, ",")
-	if len(splitedTagValue) < 2 {
+	if len(splitedTagValue) < 2 || strings.TrimSpace(splitedTagValue[1]) == "" {
 		return nil, errors.New("tag value not supported")
 	}
 	prefix := getDefaultTagPointToConfigPrefix(sd, splitedTagValue[1])
