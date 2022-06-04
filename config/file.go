@@ -40,8 +40,10 @@ const (
 	DefaultConfigPath = "../conf/ioc_golang.yaml"
 
 	PathSeparator = string(os.PathSeparator)
-	emptyString   = ""
-	dotSeparator  = "."
+)
+
+const (
+	emptyString = ""
 )
 
 func GetEnv() string {
@@ -129,7 +131,7 @@ func searchConfigFiles(opts *Options) []string {
 }
 
 func isBlankString(src string) bool {
-	return "" == src || "" == strings.TrimSpace(src)
+	return emptyString == src || emptyString == strings.TrimSpace(src)
 }
 
 func isNotBlankString(src string) bool {
@@ -137,7 +139,7 @@ func isNotBlankString(src string) bool {
 }
 
 func isEmptyStringSlice(src []string) bool {
-	return 0 == len(src)
+	return emptySlice == len(src)
 }
 
 func isNotEmptyStringSlice(src []string) bool {
@@ -146,7 +148,7 @@ func isNotEmptyStringSlice(src []string) bool {
 
 func determineAbsPath(path string) string {
 	if path == emptyString {
-		path = dotSeparator
+		path = YamlConfigSeparator
 	}
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
@@ -162,7 +164,7 @@ func determineAbsPath(path string) string {
 
 func determinePathSuffix(searchPath string) string {
 	if searchPath == emptyString {
-		searchPath = dotSeparator
+		searchPath = YamlConfigSeparator
 	}
 	if strings.HasSuffix(searchPath, PathSeparator) {
 		return searchPath

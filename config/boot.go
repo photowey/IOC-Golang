@@ -17,6 +17,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -31,11 +32,16 @@ const (
 	YmlExtension            = "yml"
 	YamlExtension           = "yaml"
 	DefaultSearchConfigName = "config"
-	DefaultSearchConfigType = YmlExtension // yaml
+	DefaultSearchConfigType = YmlExtension
+	YamlConfigSeparator     = "."
+)
 
+const (
 	emptySlice = 0
 
-	YamlConfigSeparator = "."
+	markPrefixChar   = '<'
+	markSuffixChar   = '>'
+	dotSeparatorChar = '.'
 )
 
 var (
@@ -123,7 +129,7 @@ func Load(opts ...Option) error {
 			return err
 		}
 
-		if len(sub) > 0 {
+		if len(sub) > emptySlice {
 			targetMap = MergeMap(targetMap, sub)
 		}
 
@@ -212,28 +218,28 @@ func LoadConfigByPrefix(prefix string, configStructPtr interface{}) error {
 // ----------------------------------------------------------------
 
 func determineConfigProperties(key string) ([]string, error) {
-	tokens := make([]rune, 0)
-	sdIDs := make([]rune, 0)
-	keys := make([]string, 0)
+	tokens := make([]rune, emptySlice)
+	sdIDs := make([]rune, emptySlice)
+	keys := make([]string, emptySlice)
 
 	for _, char := range key {
-		if char == '<' || len(sdIDs) > 0 {
+		if char == markPrefixChar || len(sdIDs) > emptySlice {
 			sdIDs = append(sdIDs, char)
-			if char == '>' {
+			if char == markSuffixChar {
 				keys = append(keys, string(sdIDs[1:len(sdIDs)-1]))
-				sdIDs = make([]rune, 0)
+				sdIDs = make([]rune, emptySlice)
 			}
 			continue
 		}
 
-		if char == '>' && len(sdIDs) == 0 {
-			return nil, errors.New("marks of sdID \"< & >\" unpaired")
+		if char == markSuffixChar && len(sdIDs) == emptySlice {
+			return nil, fmt.Errorf("marks of sdID \"%s & %s\" unpaired", string(markPrefixChar), string(markSuffixChar))
 		}
 
-		if char == '.' {
-			if len(tokens) > 0 {
+		if char == dotSeparatorChar {
+			if len(tokens) > emptySlice {
 				keys = append(keys, string(tokens))
-				tokens = make([]rune, 0)
+				tokens = make([]rune, emptySlice)
 			}
 			continue
 		}
@@ -241,12 +247,12 @@ func determineConfigProperties(key string) ([]string, error) {
 		tokens = append(tokens, char)
 	}
 
-	if len(tokens) > 0 {
+	if len(tokens) > emptySlice {
 		keys = append(keys, string(tokens))
 	}
 
-	if len(sdIDs) > 0 {
-		return nil, errors.New("marks of sdID \"< & >\" unpaired")
+	if len(sdIDs) > emptySlice {
+		return nil, fmt.Errorf("marks of sdID \"%s & %s\" unpaired", string(markPrefixChar), string(markSuffixChar))
 	}
 
 	return keys, nil
@@ -256,8 +262,8 @@ func determineConfigProperties(key string) ([]string, error) {
 
 func newOptions() *Options {
 	return &Options{
-		SearchPath:     make([]string, 0),
-		ProfilesActive: make([]string, 0),
+		SearchPath:     make([]string, emptySlice),
+		ProfilesActive: make([]string, emptySlice),
 	}
 }
 
