@@ -28,11 +28,6 @@ import (
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
 
-const (
-	PackagePathSeparator = "/"
-	Dot                  = "."
-)
-
 type codeWriter struct {
 	out io.Writer
 }
@@ -62,7 +57,7 @@ func (l *importsList) NeedImport(importPath string) string {
 	// we get an actual path from Package, which might include venddored
 	// packages if running on a package in vendor.
 	if ind := strings.LastIndex(importPath, "/vendor/"); ind != -1 {
-		importPath = importPath[ind+8: /* len("/vendor/") */]
+		importPath = importPath[ind+8:/* len("/vendor/") */ ]
 	}
 
 	// check to see if we've already assigned an alias, and just return that.
@@ -137,10 +132,23 @@ type paramImplPair struct {
 	constructFuncName string
 }
 
+type constructorPair struct {
+	constructFuncName string
+	infoName          string
+}
+
+func newConstructorPair(constructFuncName, infoName string) constructorPair {
+	return constructorPair{
+		constructFuncName: constructFuncName,
+		infoName:          infoName,
+	}
+}
+
 // GenerateMethodsFor makes init method
 // for the given type, when appropriate
 func (c *copyMethodMaker) GenerateMethodsFor(root *loader.Package, imports *importsList, infos []*markers.TypeInfo) {
 	paramImplPairs := make([]paramImplPair, 0)
+	constructorPairs := make([]constructorPair, 0)
 	c.Line(`func init() {`)
 	autowireAlise := c.NeedImport("github.com/alibaba/ioc-golang/autowire")
 	for _, info := range infos {
@@ -184,7 +192,7 @@ func (c *copyMethodMaker) GenerateMethodsFor(root *loader.Package, imports *impo
 		}
 		c.Linef(`%s.RegisterStructDescriptor(&%s.StructDescriptor{`, alise, autowireAlise)
 
-		// 0.gen alias
+		// 1.gen alias
 		if len(info.Markers["ioc:autowire:alias"]) != 0 {
 			c.Linef(`Alias: "%s",`, info.Markers["ioc:autowire:alias"][0].(string))
 		}
@@ -219,17 +227,22 @@ func (c *copyMethodMaker) GenerateMethodsFor(root *loader.Package, imports *impo
 		}
 
 		// 4. gen constructor
-		if constructFunc != "" && paramType != "" {
-			paramImplPairs = append(paramImplPairs, paramImplPair{
-				implName:          info.Name,
-				paramName:         paramType,
-				constructFuncName: constructFunc,
-			})
-			c.Linef(`ConstructFunc: func(i interface{}, p interface{}) (interface{}, error) {
-			param := p.(%s)
-			impl := i.(*%s)
-			return param.%s(impl)
-		},`, getParamInterfaceType(paramType), info.Name, constructFunc)
+		if constructFunc != "" {
+			if paramType != "" {
+				// param.Init
+				if strings.Contains(constructFunc, ".") {
+					constructFunc = constructFunc[strings.LastIndex(constructFunc, ".")+1:]
+				}
+				paramImplPairs = append(paramImplPairs, paramImplPair{
+					implName:          info.Name,
+					paramName:         paramType,
+					constructFuncName: constructFunc,
+				})
+				handleArgsConstructor(info, paramType, constructFunc, c)
+			} else {
+				constructorPairs = append(constructorPairs, newConstructorPair(constructFunc, info.Name))
+				handleNoArgsConstructor(info.Name, c)
+			}
 		}
 
 		c.Line(`})`)
@@ -246,6 +259,39 @@ func (c *copyMethodMaker) GenerateMethodsFor(root *loader.Package, imports *impo
 			%s (impl *%s) (*%s,error)
 		}`, getParamInterfaceType(paramImplPair.paramName), paramImplPair.constructFuncName, paramImplPair.implName, paramImplPair.implName)
 	}
+
+	c.Line(``)
+	for _, pair := range constructorPairs {
+		handleNoArgsConstructorFunc(pair.infoName, c)
+		handleDefaultConstructorFunc(pair.infoName, pair.constructFuncName, c)
+	}
+}
+
+func handleArgsConstructor(info *markers.TypeInfo, paramType string, constructFunc string, c *copyMethodMaker) {
+	c.Linef(`ConstructFunc: func(i interface{}, p interface{}) (interface{}, error) {
+			param := p.(%s)
+			impl := i.(*%s)
+			return param.%s(impl)
+		},`, getParamInterfaceType(paramType), info.Name, constructFunc)
+}
+
+func handleNoArgsConstructor(infoName string, c *copyMethodMaker) {
+	c.Linef(`ConstructFunc: func(i interface{}, p interface{}) (interface{}, error) {
+			constructor := %sDefaultConstructor()
+			return constructor(), nil
+		},`, infoName)
+}
+
+func handleNoArgsConstructorFunc(infoName string, c *copyMethodMaker) {
+	c.Linef(`type %sNoArgsConverter func() *%s`, infoName, infoName)
+}
+
+func handleDefaultConstructorFunc(infoName, constructor string, c *copyMethodMaker) {
+	c.Linef(`func %sDefaultConstructor() %sNoArgsConverter {
+	return func() *%s {
+		return %s()
+	}
+}`, infoName, infoName, infoName, constructor)
 }
 
 func getParamInterfaceType(paramType string) string {
@@ -257,29 +303,4 @@ func firstCharLower(s string) string {
 		return strings.ToLower(string(s[0])) + s[1:]
 	}
 	return s
-}
-
-func parseInterfacePackage(serviceFullName string) string {
-	servicePackage := serviceFullName[:strings.LastIndex(serviceFullName, Dot)]
-
-	return servicePackage
-}
-
-func parseInterfaceName(serviceFullName string) string {
-	serviceName := serviceFullName[strings.LastIndex(serviceFullName, Dot)+1:]
-
-	return serviceName
-}
-
-func parseInterfacePackageAlias(c *copyMethodMaker, otherPackage string) string {
-	packageAlias := c.NeedImport(otherPackage)
-
-	return packageAlias
-}
-
-func isEligibleInterfaceReferencePath(interfaceReferencePath string) bool {
-	return strings.Contains(interfaceReferencePath, PackagePathSeparator) &&
-		strings.LastIndex(interfaceReferencePath, Dot) > 0 &&
-		strings.LastIndex(interfaceReferencePath, Dot) < len(interfaceReferencePath)-1 &&
-		(strings.LastIndex(interfaceReferencePath, PackagePathSeparator) < strings.LastIndex(interfaceReferencePath, Dot))
 }
